@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="A project that show us how IA pollutes. Be aware of what you contaminate with a single message. Are you ready for a new experience?">
+    <meta name="keywords" content="Pollution, ChatBot, Conscience, IA, Message, Innovation, CO2">
+    <meta name="author" content="Carla Olivares Navarro, Angela Escudero Sanchez, Eric Garcia Castro">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/img/favicon.ico" type="image/x-icon">
+    <title>Bot Pollution</title>
+</head>
+
+<body>
+    <div id="dark-overlay"></div>
+    <div id="scene-1" class="scene visible">
+        <div class="center-container">
+            <div class="text-group">
+                <img src="/static/img/botpollutionlogo.png" alt="logo" id="logo-principal">
+                <p id="hola">An AI that reveals the carbon footprint of your words — each message it’s like a puff from a digital cigarette. <img src="/static/img/cigarette.png" alt="cigarette" style="height: 1em; position: relative; top: -3px; vertical-align: middle;"></p>
+            </div>
+            <button id="start-chatting">START <br> CHATTING</button>
+            <button id="show-credits">Credits</button>
+        </div>
+    </div>
+
+    <div id="scene-2" class="scene">
+        <div class="chat-container">
+            <div class="header">
+                <div id="total-consumed" class="total-consumed">
+                    <strong>Total Consumed: <br> </strong>
+                    <span id="total-value">0.00</span>g of CO₂ ≈ 
+                    <span id="cigarette-value">0</span>
+                    <img src="/static/img/cigarette.png" alt="cigarette" style="height: 1em; position: relative; top: -3px; vertical-align: middle;">
+                </div>
+            </div>
+            <div class="chat-box" id="chat-box"></div>
+            <div class="input-container">
+                <textarea id="message" placeholder="Ask me anything..." rows="1"></textarea>
+                <button id="send">
+
+                </button>
+            </div>
+            <div id="timer" class="timer" style="display: none; text-align: center; margin-top: 10px;">
+                <p>Time remaining to chat: <span id="time-remaining"></span></p>
+            </div>
+            <div id="limit-modal" class="modal">
+    <div class="modal-content" style="display: flex; flex-direction: column; align-items: center;">
+        <h2 style="text-align: center;">Your conversation polluted the equivalent of smoking</h2>
+        <div id="cigarette-images" style="margin: 1em 0; display: grid; grid-template-columns: repeat(4, 30px); gap: 8px; justify-content: center;">
+        </div>
+        <p style="text-align: center;">Come back in 24 hours.</p>
+        <button id="close-modal" style="margin-top: 1em; align-self: center;">Close</button>
+    </div>
+    </div>
+</div>
+
+        </div>
+    </div>
+
+    <!-- Escena 3 (Créditos) -->
+    <div id="scene-3" class="scene">
+        <div class="credits-container">
+            <h1>Credits</h1>
+            <p>This project has been designed & developed by:</p>
+            <p>Carla Olivares Navarro &#10159; <a href="https://www.instagram.com/carlaolivares.design?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank">Instagram </a> <br> Angela Escudero Sanchez &#10159;<a href="https://www.instagram.com/_aes.design?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank">Instagram </a> </p>
+            <p>With the collaboration of: <br><br> Eric García Castro as a Programmer &#10159; <a href="https://github.com/Musefa" target="_blank">GitHub</a> <br> Marc Ortiz as Industrial Engineer &#10159; <a href="https://github.com/MarcOrtiz21" target="_blank">GitHub</a><br><br>Bot Pollution 2026 </p>
+            <button id="back-to-scene1">Main Page</button> 
+        </div>
+    </div>
+
+    <script>
+        let sendButton = document.getElementById("send");
+        let chatBox = document.getElementById("chat-box");
+        let messageArea = document.getElementById("message");
+        let totalValueElement = document.getElementById("total-value");     
+        let timerElement = document.getElementById("timer");
+        let timeRemainingElement = document.getElementById("time-remaining");
+
+        let totalCO2Consumed = 0;
+        const CO2_LIMIT = 20.00; // Límite de CO₂ en gramos
+        const BLOCK_DURATION = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+        let opacity = 1.0;
+
+        window.onload = function () {
+            let botMessageDiv = document.createElement("div");
+            botMessageDiv.classList.add("chat-message", "bot-message");
+            botMessageDiv.innerHTML = `<div> Hello, I'm Bot Pollution! &#129302; \n  Each message pollutes — like a puff of a cigarette. The screen darkens as your CO₂ rises. Reach 15g and you're out for 24h. Ask consciously</div>`;
+            chatBox.appendChild(botMessageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimeout);
+            inactivityTimeout = setTimeout(() => {
+                location.reload();
+            }, 20 * 1000);
+        }
+
+        document.addEventListener("mousemove", resetInactivityTimer);
+        document.addEventListener("keydown", resetInactivityTimer);
+
+        // Comprobar bloqueo existente al cargar la página
+        function checkBlock() {
+            const blockData = JSON.parse(localStorage.getItem("chatBlock"));
+            if (blockData) {
+                const currentTime = Date.now();
+                if (currentTime < blockData.expiry) {
+                    disableChat(blockData.expiry - currentTime);
+                } else {
+                    localStorage.removeItem("chatBlock");
+                }
+            }
+        }
+
+        function disableChat(remainingTime) {
+            messageArea.disabled = true;
+            sendButton.disabled = true;
+            timerElement.style.display = "block";
+            updateTimer(remainingTime);
+
+            const interval = setInterval(() => {
+                remainingTime -= 1000;
+                if (remainingTime <= 0) {
+                    clearInterval(interval);
+                    enableChat();
+                } else {
+                    updateTimer(remainingTime);
+                }
+            }, 1000);
+        }
+
+        function enableChat() {
+            messageArea.disabled = false;
+            sendButton.disabled = false;
+            timerElement.style.display = "none";
+        }
+
+        function updateTimer(remainingTime) {
+            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+            const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+            timeRemainingElement.textContent = `${hours}h ${minutes}m ${seconds}s`;
+        }
+
+        function blockChat() {
+            const expiryTime = Date.now() + BLOCK_DURATION;
+            localStorage.setItem("chatBlock", JSON.stringify({ expiry: expiryTime }));
+            disableChat(BLOCK_DURATION);
+        }
+
+        async function getBotResponse(message) {
+    try {
+        const response = await fetch("/generate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            return data;
+        } else {
+            throw new Error(data.error || "Unknown error from server");
+        }
+
+    } catch (error) {
+        return { error: error.message };
+    }
+}
+
+function sendMessage() {
+    const userMessage = messageArea.value.trim();
+
+    if (userMessage !== "") {
+        let userMessageDiv = document.createElement("div");
+        userMessageDiv.classList.add("chat-message", "user-message");
+        userMessageDiv.innerHTML = `${userMessage}`;
+        chatBox.appendChild(userMessageDiv);
+
+        getBotResponse(userMessage).then(data => {
+            if (data.error) {
+                let errorDiv = document.createElement("div");
+                errorDiv.classList.add("chat-message", "bot-message");
+                errorDiv.innerHTML = `<div>Error: ${data.error}</div>`;
+                chatBox.appendChild(errorDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
+                return;
+            }
+
+            const botResponse = data.response;
+            const pollutionSummary = data.pollution_summary;
+
+            let pollutionMatch = pollutionSummary.match(/([\d.]+)g CO₂/);
+            const totalPollution = pollutionMatch ? parseFloat(pollutionMatch[1]) : 0;
+
+            let botResponseDiv = document.createElement("div");
+            botResponseDiv.classList.add("chat-message", "bot-message");
+            botResponseDiv.innerHTML = `<div>${botResponse}</div>`;
+            chatBox.appendChild(botResponseDiv);
+
+            let pollutionInfoDiv = document.createElement("div");
+            pollutionInfoDiv.classList.add("chat-message", "bot-message");
+            pollutionInfoDiv.innerHTML = `
+                <div class="pollution-info">
+                    ${pollutionSummary}
+                    <img src="/static/img/cigarette.png" alt="cigarette" 
+                         style="height: 1em; position: relative; top: -3px; vertical-align: middle; margin-left: 4px;">
+                </div>`;
+            chatBox.appendChild(pollutionInfoDiv);
+
+            totalCO2Consumed += totalPollution;
+            totalValueElement.innerText = totalCO2Consumed.toFixed(2);
+            document.getElementById("cigarette-value").innerText = Math.round(totalCO2Consumed);
+
+            if (totalCO2Consumed >= CO2_LIMIT) {
+                if (totalCO2Consumed >= CO2_LIMIT) {
+                showLimitModal(Math.round(totalCO2Consumed));
+                blockChat();
+        }
+        function showLimitModal(totalCO2) {
+    const modal = document.getElementById("limit-modal");
+    modal.style.display = "block";
+
+    // Calculamos la cantidad de cigarrillos (1 cigarro = 1g CO2)
+    const cigarettesUsed = Math.floor(totalCO2); // o usa otra lógica si ya la tienes
+
+    // Seleccionamos el contenedor de las imágenes
+    const imagesContainer = document.getElementById("cigarette-images");
+    imagesContainer.innerHTML = ""; // Limpiar anteriores, por si acaso
+
+    for (let i = 0; i < cigarettesUsed; i++) {
+        const img = document.createElement("img");
+        img.src = "/static/img/cigarette.png";
+        img.alt = "cigarette";
+        img.style.width = "30px";
+        img.style.margin = "2px";
+        imagesContainer.appendChild(img);
+    }
+
+    // Botón de cerrar modal
+    document.getElementById("close-modal").addEventListener("click", () => {
+        modal.style.display = "none";
+    });
+}
+
+}
+
+            const maxOpacity = 0.95;
+            const pollutionRatio = Math.min(totalCO2Consumed / CO2_LIMIT, 1);
+            const overlayOpacity = pollutionRatio * maxOpacity;
+            const darkOverlay = document.getElementById("dark-overlay");
+            darkOverlay.style.opacity = overlayOpacity;
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        messageArea.value = "";
+    }
+}
+
+
+        sendButton.addEventListener("click", sendMessage);
+        messageArea.addEventListener("keypress", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.getElementById("start-chatting").addEventListener("click", function () {
+            document.getElementById("scene-1").classList.remove("visible");
+            document.getElementById("scene-2").classList.add("visible");
+        });
+
+        checkBlock();
+
+
+        // Mostrar los créditos al hacer clic en el botón
+        document.getElementById('show-credits').addEventListener('click', function () {
+            document.getElementById('scene-1').classList.remove('visible');
+            document.getElementById('scene-3').classList.add('visible');
+        });
+
+        // Volver a la escena 1 al hacer clic en el botón "Volver a la escena 1"
+        document.getElementById('back-to-scene1').addEventListener('click', function () {
+            document.getElementById('scene-3').classList.remove('visible');
+            document.getElementById('scene-1').classList.add('visible');
+        });
+
+        // Mostrar la escena de chat al hacer clic en el botón "Start Chatting"
+        document.getElementById('start-chatting').addEventListener('click', function () {
+            document.getElementById('scene-1').classList.remove('visible');
+            document.getElementById('scene-2').classList.add('visible');
+        });
+    </script>
+</body>
+
+</html>
