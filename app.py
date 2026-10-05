@@ -31,6 +31,7 @@ def get_mistral_client():
     key = os.getenv("MISTRAL_API_KEY")
     if not key:
         return None
+    key = key.strip().strip('"').strip("'")
     try:
         from mistralai import Mistral
         client = Mistral(api_key=key)
@@ -39,75 +40,72 @@ def get_mistral_client():
         print(f"Error inicializando Mistral client: {e}")
         return None
 
-# Modelos: el principal y uno de respaldo
-PRIMARY_MODEL = "mistral-large-latest"
-FALLBACK_MODEL = "mistral-medium"
+# Modelos disponibles en el plan de Mistral (con fallback automático)
+AVAILABLE_MODELS = [
+    os.getenv("MISTRAL_MODEL", "ministral-8b-latest"),
+    "open-mistral-7b",
+    "ministral-3b-latest"
+]
 
 # Cuántos threads pueden llamar a Mistral simultáneamente
 MAX_CONCURRENT_MISTRAL = 3
 mistral_semaphore = threading.Semaphore(MAX_CONCURRENT_MISTRAL)
 
 # --------------------------------------------------
-# 2) FUNCIÓN DE LLAMADA CON BACKOFF EXPONENCIAL ANTE 429
+# 2) FUNCIÓN DE LLAMADA CON FALLBACK Y BACKOFF ANTE 429/403
 # --------------------------------------------------
 
 def _call_mistral_with_backoff(
-    model_name: str,
     messages: list,
-    max_retries: int = 4,
+    max_retries: int = 3,
     initial_delay: float = 1.0
 ) -> str:
-    """
-    Llama a Mistral con una lista de mensajes y, si recibe 429, reintenta con backoff exponencial.
-    Devuelve la respuesta en texto o lanza excepción al agotar reintentos.
-    """
     mistral_client = get_mistral_client()
     if not mistral_client:
-        raise RuntimeError("MISTRAL_API_KEY no está configurada o no se pudo inicializar Mistral.")
+        raise RuntimeError("MISTRAL_API_KEY no está configurada en las variables de entorno.")
 
-    delay = initial_delay
+    last_error = None
 
-    for attempt in range(1, max_retries + 1):
-        try:
-            resp = mistral_client.chat.complete(
-                model=model_name,
-                messages=messages,
-            )
-            return resp.choices[0].message.content
+    for model_name in AVAILABLE_MODELS:
+        delay = initial_delay
+        for attempt in range(1, max_retries + 1):
+            try:
+                resp = mistral_client.chat.complete(
+                    model=model_name,
+                    messages=messages,
+                )
+                if resp and resp.choices:
+                    return resp.choices[0].message.content
 
-        except Exception as e:
-            status_code = None
-            if hasattr(e, "response") and isinstance(e.response, requests.Response):
-                status_code = e.response.status_code
+            except Exception as e:
+                last_error = e
+                status_code = getattr(e, "status_code", None)
+                if hasattr(e, "response") and hasattr(e.response, "status_code"):
+                    status_code = e.response.status_code
 
-            if status_code == 429:
-                retry_after = None
-                if e.response is not None:
-                    retry_after = e.response.headers.get("Retry-After")
+                # Si el modelo no está disponible en este plan (403), probar el siguiente modelo
+                if status_code == 403:
+                    break
 
-                wait_seconds = delay
-                if retry_after:
-                    try:
-                        wait_seconds = max(delay, int(retry_after))
-                    except ValueError:
-                        pass
+                # Si es rate limit (429), reintentar con backoff o pasar al siguiente modelo
+                if status_code == 429:
+                    if attempt < max_retries:
+                        time.sleep(delay)
+                        delay *= 1.5
+                        continue
+                    else:
+                        break
 
-                if attempt < max_retries:
-                    time.sleep(wait_seconds)
-                    delay *= 2
-                    continue
-                else:
-                    raise
+                # Para cualquier otro error, probar el siguiente modelo de respaldo
+                break
 
-            raise
-
-    raise RuntimeError("No se obtuvo respuesta de Mistral tras reintentos.")
+    raise RuntimeError(f"Error al llamar a Mistral: {str(last_error)}")
 
 
 def generate_response(user_message: str) -> str:
     """
     Envuelve la llamada a Mistral dentro de un semáforo para limitar concurrencia,
-    e implementa fallback al modelo “medium” si “large” sigue devolviendo 429.
+    con fallback automático de modelos.
     """
     system_prompt = (
         "Detecta el idioma del mensaje del usuario y responde en ese mismo idioma. "
@@ -122,23 +120,10 @@ def generate_response(user_message: str) -> str:
 
     with mistral_semaphore:
         try:
-            return _call_mistral_with_backoff(PRIMARY_MODEL, messages)
+            return _call_mistral_with_backoff(messages)
 
         except Exception as e:
-            status_code = None
-            if hasattr(e, "response") and isinstance(e.response, requests.Response):
-                status_code = e.response.status_code
-
-            if status_code == 429:
-                try:
-                    return _call_mistral_with_backoff(FALLBACK_MODEL, messages)
-                except Exception:
-                    return (
-                        "[Lo siento, en este momento no puedo procesar tu solicitud. "
-                        "Intenta nuevamente más tarde.]"
-                    )
-
-            return f"[Error al solicitar al modelo: {str(e)}]"
+            return f"[Lo siento, en este momento no puedo procesar tu solicitud: {str(e)}]"
 
 # --------------------------------------------------
 # 3) ENDPOINTS DE FLASK Y LÓGICA DE POLUCIÓN DIGITAL
@@ -157,7 +142,12 @@ def index():
 
 @app.route('/health')
 def health():
-    return jsonify({"status": "ok", "app": "botpollution"})
+    key_configured = bool(os.getenv("MISTRAL_API_KEY"))
+    return jsonify({
+        "status": "ok",
+        "app": "botpollution",
+        "mistral_key_configured": key_configured
+    })
 
 @app.route("/generate", methods=["POST"])
 def generate():
