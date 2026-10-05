@@ -1,6 +1,9 @@
 {
-  "name": "botpollution",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app.py": {
+      "includeFiles": "templates/**",
+      "maxDuration": 60
+    }
+  }
 }

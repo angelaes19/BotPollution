@@ -1,0 +1,501 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.5s, opacity 0.5s; /* Transición suave */
+}
+
+/* --------------------------------------------CHAT (ADAPTADO A MOVILES)---------------------------------------------- */
+
+/* Barra superior */
+.header {
+    display: flex; /* Activa el uso de flexbox */
+    flex-direction: column; /* Coloca los elementos en una columna */
+    align-items: center; /* Centra los elementos horizontalmente */
+    justify-content: center; /* Centra los elementos verticalmente */
+    width: 60vw; /* Ancho fijo para pantallas grandes */
+    height: auto; /* Altura fija */
+    margin: 0 auto; /* Centrar horizontalmente */
+    background-color: #ffffff00; /* Fondo transparente */
+    margin-top: 2vh; /* Espaciado desde la parte superior */
+    margin-bottom: 2vh; /* Espaciado desde la parte inferior */
+    color: rgb(0, 0, 0); /* Color del texto */
+    padding: 10px; /* Espaciado interno */
+    border: 1px solid black; /* Borde negro */
+    border-radius: 30px; /* Bordes redondeados */
+}
+
+
+/* Contenedor de input */
+.input-container {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-left: 20vw;
+    margin-right: 20vw;
+    width: 60vw;
+    height: 40px;;
+    margin-bottom: 1vh;
+    border-radius: 30px; /* Ajusta este valor según lo redondeado que quieras */
+    border: 1px solid #000000; /* Asegúrate de definir un color para el borde */
+    z-index: 1;
+}
+
+
+
+/* Contenedor de mensajes */
+.chat-box {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
+    margin-left: 20vw;
+    margin-right: 20vw;
+}
+
+/* Área de mensaje */
+#message {
+    display: flex;
+    flex: 1;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    outline: none;
+    resize: none;
+    border:none;
+}
+
+/* Botón de enviar */
+#send {
+    width: 50px;
+    height: 50px;
+    margin-left: 1vw;
+    background-color: #ffffff;
+    background-image: url('./img/send.png');
+    background-size: 75px 75px;
+    background-position: center;
+    cursor: pointer;
+    border:none;
+    border-radius: 50%;
+}
+
+#send:active {
+    background-color: #ffffff27;
+}
+
+#message::placeholder {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+}
+
+.header-title {
+    font-size: 24px; /* Cambia el tamaño de la letra en el header */
+    margin: 0; /* Elimina márgenes */
+    
+}
+
+.total-consumed {
+    background-color: #bae11d00; /* Color de fondo del total consumido */
+    color: rgb(0, 0, 0); /* Color del texto del total consumido */
+    margin: 0; /* Elimina márgenes */
+    padding: 10px; /* Espacio interno del total consumido */
+    box-sizing: border-box; /* Asegura que el padding no aumente el tamaño total */
+    border: 5px #000000; 
+    border-radius: 30%;
+    font-size: 15px; /* Cambia el tamaño de la letra en total consumido */
+}
+
+/* Contenedor principal de chat */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 100vw;
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-top: 0;
+    
+}
+
+/* Mensajes */
+.chat-message {
+    margin-bottom: 0.8vh;
+    max-width: 75vw;
+    padding: 1vh;
+    border-radius: 0.75vh;
+    border: 1px solid black; 
+    font-size: 15px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Mensaje de usuario (a la derecha) */
+.user-message {
+    background-color: #ffffff;
+    border: 50px #0000;
+    align-self: flex-end;
+    border: 1px solid black;
+    border-radius: 30px;
+    padding:15px;
+    box-sizing:border-box;
+    font-size: 15px;
+
+}
+
+/* Mensaje del bot (a la izquierda) */
+.bot-message {
+    background-color: #e6e6e6;
+    align-self: flex-start;
+    border-color: 1px #000000 ;
+    border-radius: 30px ;
+    padding: 15px;
+    box-sizing:border-box;
+
+}
+
+.timer {
+    color: #000000;
+}
+
+/* Adaptación para pantallas muy pequeñas */
+@media only screen and (max-width: 450px) {
+    .header {
+        width: 70vw;
+    }
+
+    .input-container {
+        width: 70vw;
+        margin: 0 auto;
+        margin-bottom: 7vh;
+    }
+
+    .chat-box {
+        margin-left: 10vw;
+        margin-right: 10vw;
+    }
+}
+
+/* Adaptación para pantallas muy pequeñas */
+@media only screen and (max-width: 400px) {
+    .input-container {
+        width: 70vw;
+        margin: 0 auto;
+        margin-bottom: 7vh;
+    }
+
+    .input-container textarea{
+        width: 70vw;
+    }
+
+    .chat-box {
+        margin-left: 10vw;
+        margin-right: 10vw;
+    }
+}
+
+/* --------------------------------------------SCENA 1---------------------------------------------- */
+
+.center-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+    line-height: 0.9;
+}
+
+#logo-principal {
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+    width: 30vw;
+    color: #000000;
+    text-overflow: ellipsis;
+    font-weight: normal;
+    margin-top: 5%;
+    margin-bottom: 2%;
+}
+
+.center-container p {
+    color: rgb(0, 0, 0);
+    font-size: 2vw; /* Tamaño dinámico de fuente */
+    padding-left: 2vw; /* Espacio interno para mayor estética */
+    padding-right: 2vw; /* Espacio interno para mayor estética */
+    padding-bottom: 1vh;
+    margin-top: 2vh;
+    margin-left: 2vw;
+    margin-bottom: 1vh;
+}
+
+
+/* Estilo base para pantallas grandes */
+.center-container p3 {
+    color: black;
+    font-size: 39px;
+    margin-left: 2vw;
+    margin-bottom:0;
+}
+
+/* BOTÓN PAGINA PRINCIPAL */
+.center-container button {
+    width: 250px;
+    height: 100px;
+    font-size: 30px;
+    border: 1px solid black;
+    border-radius: 60px;
+    background-color: #000000; /* Fondo transparente */
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 6vh;
+}
+
+/* Efecto al pasar el ratón sobre el botón */
+.center-container button:hover {
+    border: none;
+    color: #ffffff;
+    background-color: #b3afafad; /* Cambiar color al hacer clic */
+    transition: transform 0.1s ease; /* Transición suave */
+
+}
+
+#scene-1 {
+    background-color: #ffffff;
+    z-index: 1; /* Asegura que la escena 1 esté por encima de otras capas cuando sea necesario */
+
+} 
+
+/* BOTÓN CREDITOS */
+#show-credits {
+    align-items: center;
+    color: #000000;
+    border: none;
+    background-color: initial;
+    margin-top: -3vh;
+    font-size: 20px;
+}
+
+
+#show-credits:hover {
+    color: #ffffff;
+    background-color: #b3afafad; /* Cambiar color al hacer clic */
+    transition: transform 0.1s ease; /* Transición suave */
+}
+
+#start-chatting {
+    margin-bottom: 3vh;
+}
+
+
+/* --------------------------------------------SCENA 1 + CREDITOS (ADAPTADO A MOVILES)---------------------------------------------- */
+
+@media only screen and (max-width: 450px) {
+    .center-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+    }
+
+    .text-group {
+        text-align: left;
+        width: 75vw;
+    }
+
+    #logo-principal {
+        display: flex;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+        color: #000000;
+        font-size: 22vw; /* Tamaño relativo al ancho de pantalla */
+        text-overflow: ellipsis;
+        font-weight: normal;
+        margin-top: 0%;
+        margin-bottom: 20%;
+        line-height: 0.9;
+    }
+    
+    .text-group p {
+        width: 100%;
+        font-size:5vw;
+        margin-top: 10%; /* Asegura que no tenga margen superior adicional */
+        margin-bottom: 10%; /* Asegura que no tenga margen inferior adicional */
+        align-items: center;
+    }
+    
+
+    #start-chatting {
+        align-items: center;
+        width: 40vw;
+        height: 9vh;
+        font-size: 5vw;
+        margin-top: 3vh;
+        margin-bottom: 7vh;
+        
+    }
+
+    #start-chatting:active {
+        border: none;
+        background-color: #b3afafad; /* Cambiar color al hacer clic */
+        transition: transform 0.1s ease; /* Transición suave */
+    }
+
+    .center-container p3 {
+        font-size: larger;
+        margin-left: auto;
+        margin-right: auto;
+        
+    }
+
+    #show-credits {
+        align-items: center;
+        width: 30vw;
+        height: 5vh;
+        font-size: 4vw;
+        margin-top: 7vh;
+        margin-bottom: -3vh;
+        color: black;
+        background-color: initial;
+        border: none;
+    }
+
+    #show-credits:active {
+        background-color: #b3afafad; /* Cambiar color al hacer clic */
+        transition: transform 0.1s ease; /* Transición suave */
+    }
+
+    #back-to-scene1:active {
+        background-color: #ffffff; /* Cambiar color al hacer clic */
+        transition: transform 0.1s ease; /* Transición suave */
+    }
+}
+
+.scene {
+    display: none;
+}
+
+.visible {
+    display: block;
+}
+
+/* --------------------------------------------SCENA 3 (CREDITOS) ---------------------------------------------- */
+
+/* Estilo para la escena de créditos */
+#scene-3 {
+    display: none; /* Asegúrate de que la escena de créditos no sea visible inicialmente */
+    background-color: #ffffff; /* Fondo gris claro */
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    z-index: 1; /* Asegura que la escena 1 esté por encima de otras capas cuando sea necesario */
+
+}
+
+#scene-3.visible {
+    display: flex; /* Asegúrate de que la escena de créditos no sea visible inicialmente */
+    background-color: #ffffff; /* Fondo gris claro */
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    z-index: 1; /* Asegura que la escena 1 esté por encima de otras capas cuando sea necesario */
+
+}
+
+/* Contenedor de créditos */
+.credits-container {
+    background-color: #fff; /* Fondo blanco para el contenedor */
+    padding: 3vh; /* Espaciado interno */
+    border-radius: 15px; /* Bordes redondeados */
+    max-width: 60vw; /* Ancho máximo */
+    width: 100%; /* Asegura que el contenedor sea flexible */
+    border: 1px black;
+}
+
+/* Título de los créditos */
+.credits-container h1 {
+    font-size: 36px; /* Tamaño de fuente grande */
+    color: #000000; /* Color gris oscuro */
+    margin-bottom: 2vh; /* Espaciado debajo del título */
+    font-style: none;
+}
+
+/* Párrafos de créditos */
+.credits-container p {
+    font-size: 18px; /* Tamaño de texto legible */
+    color: #000000; /* Gris oscuro */
+    margin-bottom: 1vh; /* Espaciado debajo de cada párrafo */
+}
+
+/* Estilo del botón para volver a la escena 1 */
+#back-to-scene1 {
+    color: rgb(0, 0, 0); /* Texto blanco */
+    padding: 1.2vh 2.4vw; /* Espaciado dentro del botón */
+    border-radius: 8px; /* Bordes redondeados */
+    font-size: 16px; /* Tamaño de texto */
+    cursor: pointer; /* Cambiar a mano al pasar el ratón */
+    transition: background-color 0.3s ease; /* Transición suave para el color */
+    margin-top: 2vh; /* Espaciado superior */
+    border:1px black;
+}
+
+/* Efecto al pasar el ratón sobre el botón */
+#back-to-scene1:hover {
+    background-color: #ffffff; /* Csolor más oscuro de azul al pasar el ratón */
+}
+
+#dark-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0; /* Comienza completamente transparente */
+    pointer-events: none; /* Permite interactuar con los elementos debajo */
+    z-index: 9999; /* Asegúrate de que esté por encima de todos los demás elementos */
+    transition: opacity 0.5s ease; /* Suaviza el cambio de opacidad */
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 2em;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    text-align: center;
+    border-radius: 10px;
+}
+
+.modal-content button {
+    margin-top: 1em;
+    padding: 0.5em 1em;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+

@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from mistralai import Mistral
 
 load_dotenv()
 
@@ -30,10 +29,15 @@ def get_mistral_client():
     if client is not None:
         return client
     key = os.getenv("MISTRAL_API_KEY")
-    if key:
+    if not key:
+        return None
+    try:
+        from mistralai import Mistral
         client = Mistral(api_key=key)
         return client
-    return None
+    except Exception as e:
+        print(f"Error inicializando Mistral client: {e}")
+        return None
 
 # Modelos: el principal y uno de respaldo
 PRIMARY_MODEL = "mistral-large-latest"
@@ -59,7 +63,7 @@ def _call_mistral_with_backoff(
     """
     mistral_client = get_mistral_client()
     if not mistral_client:
-        raise RuntimeError("MISTRAL_API_KEY no está configurada en las variables de entorno.")
+        raise RuntimeError("MISTRAL_API_KEY no está configurada o no se pudo inicializar Mistral.")
 
     delay = initial_delay
 
@@ -105,14 +109,12 @@ def generate_response(user_message: str) -> str:
     Envuelve la llamada a Mistral dentro de un semáforo para limitar concurrencia,
     e implementa fallback al modelo “medium” si “large” sigue devolviendo 429.
     """
-    # Definimos un sistema que detecta el idioma y aplica el resto de instrucciones:
     system_prompt = (
         "Detecta el idioma del mensaje del usuario y responde en ese mismo idioma. "
         "Responde de forma concisa haciendo énfasis en la contaminación digital "
         "y no excedas las 30 palabras."
     )
 
-    # Preparamos la conversación como lista de mensajes:
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user",   "content": user_message},
@@ -144,7 +146,18 @@ def generate_response(user_message: str) -> str:
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        index_path = os.path.join(base_dir, 'templates', 'index.html')
+        if os.path.exists(index_path):
+            with open(index_path, 'r', encoding='utf-8') as f:
+                return f.read(), 200, {'Content-Type': 'text/html; charset=utf-8'}
+        return f"Error loading index: {str(e)}", 500
+
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok", "app": "botpollution"})
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -158,10 +171,9 @@ def generate():
         if not user_message:
             return jsonify({"error": "No message provided"}), 400
 
-        # Llamada a Mistral (dentro del semáforo + reintentos)
         bot_response = generate_response(user_message)
 
-        # Cálculo de “contaminación digital”
+        # Cálculo de contaminación digital
         pollution_per_char = 0.02  # gramos de CO₂ por carácter
         user_pollution = len(user_message) * pollution_per_char
         bot_pollution = len(bot_response) * pollution_per_char
