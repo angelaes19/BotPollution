@@ -33,12 +33,12 @@ def get_mistral_client():
         return None
     key = key.strip().strip('"').strip("'")
     try:
-        from mistralai import Mistral
+        from mistralai.client import Mistral
         client = Mistral(api_key=key)
         return client
     except Exception as e:
         print(f"Error inicializando Mistral client: {e}")
-        return None
+        raise RuntimeError("No se pudo inicializar el cliente Mistral; revisa los logs de Runtime.") from e
 
 # Modelos disponibles en el plan de Mistral (con fallback automático)
 AVAILABLE_MODELS = [
